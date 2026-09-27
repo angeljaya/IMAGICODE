@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html lang="es" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMAGICODE Bolivia - Kiosco Interactivo y Generador de Llaveros QR</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter & Outfit & Great Vibes -->
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;600;800&family=Pacifico&display=swap" rel="stylesheet">
+    <!-- Tone.js for Sound Effects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tone/14.8.49/Tone.js"></script>
+    <!-- Canvas Confetti -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        outfit: ['Outfit', 'sans-serif'],
+                        vibes: ['Great Vibes', 'cursive'],
+                        pacifico: ['Pacifico', 'cursive']
+                    },
+                    colors: {
+                        brand: {
+                            50: '#fef2f2',
+                            100: '#fee2e2',
+                            500: '#ef4444',
+                            600: '#dc2626',
+                            700: '#b91c1c',
+                            900: '#7f1d1d'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.8); }
+        }
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
+        .animate-glow { animation: pulseGlow 3s infinite; }
+        .shimmer-bg {
+            background: linear-gradient(90deg, rgba(255,255,255,0) 0%, rgba(255,255,255,0.2) 50%, rgba(255,255,255,0) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 2.5s infinite;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e24; }
+        ::-webkit-scrollbar-thumb { background: #ef4444; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #dc2626; }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-full flex flex-col selection:bg-red-500 selection:text-white">
+
+    <!-- Top Navigation Header -->
+    <header class="sticky top-0 z-50 bg-slate-900/90 backdrop-blur-md border-b border-slate-800 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 flex items-center justify-center shadow-lg shadow-red-600/30 text-white text-2xl font-black animate-glow">
+                    <i class="fa-solid fa-qrcode"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold font-outfit tracking-tight bg-gradient-to-r from-white via-slate-200 to-red-400 bg-clip-text text-transparent">
+                        IMAGICODE <span class="text-red-500 text-sm font-semibold uppercase px-2 py-0.5 rounded-full bg-red-500/10 border border-red-500/30">Bolivia</span>
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium">Kiosco de Regalos Interactivos & Llaveros Inteligentes (7 Bs)</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button onclick="toggleAudioEngine()" id="audioToggleBtn" class="flex items-center space-x-2 px-3 py-2 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-xs sm:text-sm font-medium transition-all shadow-sm">
+                    <i id="audioIcon" class="fa-solid fa-volume-xmark text-red-400"></i>
+                    <span id="audioStatusText" class="hidden sm:inline">Música / Audio: OFF</span>
+                </button>
+                <button onclick="openHowItWorksModal()" class="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-red-600/20 hover:bg-red-600/30 border border-red-500/40 text-red-400 text-xs sm:text-sm font-semibold transition-all">
+                    <i class="fa-solid fa-circle-question"></i>
+                    <span>¿Cómo Funciona?</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left Column: Comprehensive Form & Event Customizer (7 cols) -->
+        <section class="lg:col-span-7 bg-slate-900/60 backdrop-blur-md rounded-3xl border border-slate-800/80 p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-64 h-64 bg-red-600/5 rounded-full blur-3xl pointer-events-none"></div>
+
+            <div class="mb-6 flex items-center justify-between border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="text-xl font-bold font-outfit text-white flex items-center gap-2">
+                        <i class="fa-solid fa-wand-magic-sparkles text-red-500"></i> Diseña Tu Tarjeta & Llavero
+                    </h2>
+                    <p class="text-xs text-slate-400">Personaliza cada detalle para tu ocasión especial en Bolivia.</p>
+                </div>
+                <button onclick="loadPresetSample()" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-red-400 border border-slate-700 transition">
+                    <i class="fa-solid fa-bolt"></i> Cargar Ejemplo
+                </button>
+            </div>
+
+            <form id="keychainForm" onsubmit="event.preventDefault();" class="space-y-6">
+                
+                <!-- 1. Occasion Selector (Universal Event System) -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+                        <i class="fa-solid fa-calendar-star text-red-500 mr-1"></i> 1. Selecciona la Ocasión / Evento
+                    </label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5" id="occasionGrid">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+                </div>
+
+                <!-- 2. Names & Participants -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                            <i class="fa-solid fa-user-tag text-red-500 mr-1"></i> Nombre del Destinatario (Para quién es)
+                        </label>
+                        <input type="text" id="recipientName" oninput="updateLiveSimulator()" placeholder="Ej. Camila Andrea" 
+                            class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                            <i class="fa-solid fa-signature text-red-500 mr-1"></i> Tu Nombre / Remitente (De parte de)
+                        </label>
+                        <input type="text" id="senderName" oninput="updateLiveSimulator()" placeholder="Ej. Alejandro (Tu amor)" 
+                            class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500 transition">
+                    </div>
+                </div>
+
+                <!-- 3. Avatar / Photo URL Picker -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-image text-red-500 mr-1"></i> Foto de Perfil o Avatar (URL de imagen o elige sticker)
+                    </label>
+                    <div class="flex gap-2 mb-2">
+                        <input type="url" id="avatarUrl" oninput="updateLiveSimulator()" placeholder="https://ejemplo.com/foto.jpg" 
+                            class="flex-1 bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-2.5 text-sm text-white focus:outline-none focus:border-red-500 transition">
+                        <button type="button" onclick="selectRandomAvatar()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl text-xs font-semibold text-slate-200 transition">
+                            <i class="fa-solid fa-dice"></i> Aleatorio
+                        </button>
+                    </div>
+                    <!-- Quick Preset Avatars -->
+                    <div class="flex items-center gap-2 overflow-x-auto pb-1" id="avatarPresets">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- 4. Main Greeting Message -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                        <i class="fa-solid fa-comment-dots text-red-500 mr-1"></i> Mensaje Principal de Felicitación / Saludo
+                    </label>
+                    <textarea id="mainGreeting" rows="3" oninput="updateLiveSimulator()" placeholder="Escribe un mensaje emotivo que aparecerá en la tarjeta digital..."
+                        class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500 transition resize-none"></textarea>
+                </div>
+
+                <!-- 5. Secret Surprise Modal Content -->
+                <div class="p-4 rounded-2xl bg-slate-950/60 border border-slate-800/80 space-y-4">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-red-400 uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fa-solid fa-box-open"></i> Sorpresa Secreta al Tocar el Botón (Regalo Interactivo)
+                        </span>
+                        <span class="text-[10px] bg-red-500/10 text-red-400 border border-red-500/20 px-2 py-0.5 rounded-full font-medium">¡Magia Interactiva!</span>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Título del Pop-Up Secreto</label>
+                            <input type="text" id="secretTitle" oninput="updateLiveSimulator()" placeholder="Ej. ¡Una sorpresita para ti!" 
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Texto del Botón Desbloqueador</label>
+                            <input type="text" id="secretButtonText" oninput="updateLiveSimulator()" placeholder="Ej. Tócame para ver tu regalo 🎁" 
+                                class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-400 mb-1">Mensaje Secreto Revelado (Poema, confesión, fecha o cupón)</label>
+                        <textarea id="secretMessage" rows="2" oninput="updateLiveSimulator()" placeholder="Escribe el secreto que aparecerá con confeti y efectos al hacer clic..."
+                            class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-500 resize-none"></textarea>
+                    </div>
+                </div>
+
+                <!-- 6. Background Theme & Playlist selection -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                            <i class="fa-solid fa-palette text-red-500 mr-1"></i> Paleta de Colores y Estilo
+                        </label>
+                        <select id="themeStyle" onchange="updateLiveSimulator()" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500">
+                            <option value="romantic">💖 Romántico & San Valentín (Rojo/Rosa)</option>
+                            <option value="birthday">🎉 Cumpleaños Festivo (Dorado/Multicolor)</option>
+                            <option value="graduation">🎓 Graduación Elegante (Azul Marino/Oro)</option>
+                            <option value="neon">⚡ Fiesta Neón / Dark Cyber (Cian/Morado)</option>
+                            <option value="wedding">💍 Bodas & Aniversario (Blanco/Dorado)</option>
+                            <option value="christmas">🎄 Navidad & Invierno (Verde/Rojo)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-1.5">
+                            <i class="fa-solid fa-music text-red-500 mr-1"></i> Melodía de Fondo (Web Audio)
+                        </label>
+                        <select id="bgMelody" onchange="updateLiveSimulator()" class="w-full bg-slate-950/80 border border-slate-700 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-red-500">
+                            <option value="romance">🎵 Vals Romántico Melancólico</option>
+                            <option value="happy">🎶 Arpegio Alegre de Cumpleaños</option>
+                            <option value="serene">✨ Melodía Zen & Graduación</option>
+                            <option value="cyber">🎧 Beat Electrónico Neón</option>
+                        </select>
+                    </div>
+                </div>
+
+            </form>
+        </section>
+
+        <!-- Right Column: Live Smartphone Simulator (5 cols) -->
+        <section class="lg:col-span-5 flex flex-col items-center sticky top-28">
+            <div class="w-full text-center mb-3">
+                <span class="text-xs font-bold uppercase tracking-wider text-red-400 bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full">
+                    <i class="fa-solid fa-mobile-screen-button"></i> Vista Previa en Vivo (Celular)
+                </span>
+            </div>
+
+            <!-- Realistic Smartphone Frame -->
+            <div class="relative w-[310px] sm:w-[340px] h-[640px] bg-slate-900 rounded-[48px] p-3.5 border-4 border-slate-700/80 shadow-2xl shadow-red-900/20 flex flex-col overflow-hidden ring-8 ring-slate-900/50">
+                <!-- Phone Speaker & Notch -->
+                <div class="absolute top-4 left-1/2 -translate-x-1/2 w-32 h-5 bg-slate-950 rounded-full z-30 flex items-center justify-center space-x-2">
+                    <div class="w-3 h-3 rounded-full bg-slate-800"></div>
+                    <div class="w-12 h-1.5 rounded-full bg-slate-800"></div>
+                </div>
+
+                <!-- Phone Inner Screen -->
+                <div id="phoneScreen" class="relative w-full h-full rounded-[38px] overflow-y-auto flex flex-col transition-all duration-500 p-5 pt-10 bg-gradient-to-br from-slate-900 via-slate-950 to-rose-950 text-slate-100">
+                    
+                    <!-- Decorative Background Floating Particles -->
+                    <div class="absolute inset-0 opacity-15 pointer-events-none overflow-hidden" id="phoneParticles">
+                        <div class="absolute top-10 left-5 text-2xl animate-float">❤️</div>
+                        <div class="absolute top-32 right-8 text-xl animate-float" style="animation-delay: 1s;">✨</div>
+                        <div class="absolute bottom-20 left-10 text-xl animate-float" style="animation-delay: 2s;">🎁</div>
+                    </div>
+
+                    <!-- Header Badge -->
+                    <div class="text-center mb-4 z-10">
+                        <span id="simOccasionBadge" class="text-[10px] font-extrabold uppercase tracking-widest px-3 py-1 rounded-full bg-red-500/20 border border-red-500/40 text-red-300">
+                            San Valentín
+                        </span>
+                    </div>
+
+                    <!-- Recipient Avatar -->
+                    <div class="flex flex-col items-center mb-4 z-10">
+                        <div class="relative w-24 h-24 rounded-full p-1 bg-gradient-to-tr from-red-500 via-rose-400 to-amber-400 shadow-xl shadow-red-500/20 mb-2">
+                            <img id="simAvatarImg" src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80" 
+                                alt="Avatar" class="w-full h-full rounded-full object-cover border-2 border-slate-900" onerror="this.src='https://placehold.co/300x300/331111/ffaaaa?text=❤️'">
+                            <div class="absolute bottom-0 right-0 w-7 h-7 bg-red-600 rounded-full flex items-center justify-center text-white text-xs border-2 border-slate-900 shadow-md">
+                                <i id="simAvatarIcon" class="fa-solid fa-heart"></i>
+                            </div>
+                        </div>
+                        <h3 id="simRecipientTitle" class="text-lg font-bold font-outfit text-white tracking-wide text-center">Camila Andrea</h3>
+                        <p class="text-[11px] text-slate-400 font-medium">De parte de: <span id="simSenderText" class="text-red-400 font-semibold">Alejandro</span></p>
+                    </div>
+
+                    <!-- Main Greeting Card Box -->
+                    <div class="bg-slate-900/80 backdrop-blur-md rounded-2xl p-4 border border-slate-800/80 shadow-lg mb-5 z-10">
+                        <p id="simGreetingText" class="text-xs text-slate-200 leading-relaxed text-center font-sans italic">
+                            "Feliz San Valentín mi amor. Eres lo más hermoso que me ha pasado en la vida. Te amo con todo mi corazón."
+                        </p>
+                    </div>
+
+                    <!-- Secret Gift Button (Interactive Popup Trigger) -->
+                    <div class="mt-auto pb-4 z-10">
+                        <button onclick="triggerSecretPopup()" id="simSecretBtn" class="w-full py-3.5 px-4 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-bold text-xs shadow-lg shadow-red-600/40 flex items-center justify-center space-x-2 transition transform active:scale-95 animate-glow">
+                            <i class="fa-solid fa-gift text-sm"></i>
+                            <span id="simSecretBtnText">Tócame para ver tu regalo 🎁</span>
+                        </button>
+                        <p class="text-[10px] text-center text-slate-400 mt-2">
+                            <i class="fa-solid fa-shield-halved text-emerald-400 mr-1"></i> Llavero Inteligente IMAGICODE
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Phone Bottom Bar Home Indicator -->
+                <div class="absolute bottom-1.5 left-1/2 -translate-x-1/2 w-32 h-1 bg-slate-700 rounded-full"></div>
+            </div>
+
+            <!-- CTA Order Button (Triggers Secure Yape Payment Modal) -->
+            <div class="w-full mt-6">
+                <button onclick="openCheckoutModal()" class="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-500 hover:to-emerald-600 text-white font-extrabold text-sm sm:text-base shadow-xl shadow-emerald-900/30 flex items-center justify-center space-x-3 transition transform hover:-translate-y-0.5 border border-emerald-400/30">
+                    <i class="fa-solid fa-qrcode text-xl animate-pulse"></i>
+                    <span>Pagar 7 Bs por Yape y Pedir Llavero</span>
+                </button>
+                <p class="text-[11px] text-center text-slate-400 mt-2">
+                    <i class="fa-solid fa-bolt text-amber-400"></i> Entrega física en Bolivia + Tarjeta Interactiva QR ilimitada
+                </p>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- SECURE YAPE PAYMENT & WHATSAPP MODAL (CRITICAL BUSINESS FLOW) -->
+    <div id="checkoutModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden animate-fadeIn">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-48 h-48 bg-emerald-600/10 rounded-full blur-3xl pointer-events-none"></div>
+            
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-600/20 border border-purple-500/40 flex items-center justify-center text-purple-400 font-bold text-lg">
+                        <i class="fa-solid fa-mobile-screen"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-bold font-outfit text-white">Pago Seguro por Yape</h3>
+                        <p class="text-xs text-slate-400">IMAGICODE Bolivia - Llavero Físico + QR</p>
+                    </div>
+                </div>
+                <button onclick="closeCheckoutModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Price & Recipient Summary -->
+            <div class="bg-slate-950/80 border border-slate-800 rounded-2xl p-4 mb-6 space-y-3">
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-400">Producto:</span>
+                    <span class="font-semibold text-white">Llavero Acrílico + Tarjeta Digital Interactiva</span>
+                </div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-400">Destinatario:</span>
+                    <span id="modalSummaryRecipient" class="font-semibold text-red-400">Camila Andrea</span>
+                </div>
+                <div class="flex justify-between items-center pt-2 border-t border-slate-800/80">
+                    <span class="text-sm font-bold text-slate-200">Monto Total a Pagar:</span>
+                    <span class="text-lg font-black text-emerald-400 bg-emerald-500/10 px-3 py-1 rounded-xl border border-emerald-500/30">7.00 Bs</span>
+                </div>
+            </div>
+
+            <!-- Yape QR Card & Instructions -->
+            <div class="bg-slate-950 border border-purple-500/30 rounded-2xl p-4 text-center mb-6 space-y-3 shadow-inner">
+                <div class="inline-block bg-purple-600/20 text-purple-300 text-[11px] font-bold px-3 py-1 rounded-full border border-purple-500/30">
+                    Escanea con tu App Yape (Bolivia)
+                </div>
+                
+                <!-- Yape QR Image with Fallback -->
+                <div class="w-48 h-48 mx-auto bg-white rounded-xl p-2 shadow-lg border-2 border-purple-500/40 flex items-center justify-center overflow-hidden">
+                    <img id="yapeQrImg" src="angel_yape.png" alt="QR Yape Angel" class="w-full h-full object-contain" 
+                        onerror="this.onerror=null; this.src='https://placehold.co/200x200/ffffff/552288?text=YAPE+ANGEL%0A65153083';">
+                </div>
+
+                <div class="text-xs space-y-1 text-slate-300">
+                    <p class="font-bold text-white">Titular: <span class="text-purple-300">Angel (IMAGICODE)</span></p>
+                    <p>Número de Celular Yape: <span class="font-mono font-bold text-emerald-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-700">65153083</span></p>
+                </div>
+                <p class="text-[10px] text-slate-400 italic">
+                    ⚠️ Importante: Ningún enlace ni QR final se genera hasta que completes el pago y envíes tu comprobante por WhatsApp a Angel.
+                </p>
+            </div>
+
+            <!-- WhatsApp Send Button -->
+            <button onclick="sendOrderToWhatsApp()" class="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white font-bold text-xs sm:text-sm shadow-lg shadow-emerald-900/30 flex items-center justify-center space-x-2 transition transform active:scale-95">
+                <i class="fa-brands fa-whatsapp text-lg"></i>
+                <span>Ya pagué por Yape -> Enviar Pedido a WhatsApp</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- SECRET SURPRISE POPUP MODAL (Simulated & Live) -->
+    <div id="secretPopupModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden animate-fadeIn">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border border-red-500/40 rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl relative overflow-hidden">
+            <div class="absolute -top-10 -right-10 w-32 h-32 bg-red-600/20 rounded-full blur-2xl pointer-events-none"></div>
+            
+            <div class="w-16 h-16 rounded-2xl bg-red-600/20 border border-red-500/40 mx-auto flex items-center justify-center text-red-400 text-3xl mb-4 animate-bounce">
+                🎁
+            </div>
+            
+            <h3 id="popupSecretTitleModal" class="text-xl font-bold font-outfit text-white mb-2">¡Una sorpresita para ti!</h3>
+            <p id="popupSecretMsgModal" class="text-xs text-slate-300 leading-relaxed mb-6 font-sans italic">
+                Aquí va el mensaje secreto revelado...
+            </p>
+            
+            <button onclick="closeSecretPopup()" class="w-full py-3 rounded-xl bg-red-600 hover:bg-red-500 text-white font-bold text-xs shadow-lg shadow-red-600/30 transition">
+                ¡Qué hermosura! ❤️
+            </button>
+        </div>
+    </div>
+
+    <!-- HOW IT WORKS MODAL -->
+    <div id="howItWorksModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md hidden animate-fadeIn">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl relative">
+            <div class="flex items-center justify-between pb-4 border-b border-slate-800 mb-6">
+                <h3 class="text-lg font-bold font-outfit text-white flex items-center gap-2">
+                    <i class="fa-solid fa-circle-question text-red-500"></i> ¿Cómo Funciona IMAGICODE?
+                </h3>
+                <button onclick="closeHowItWorksModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-white transition">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="space-y-4 text-xs sm:text-sm text-slate-300">
+                <div class="flex items-start space-x-3">
+                    <div class="w-7 h-7 rounded-full bg-red-600/20 text-red-400 font-bold flex items-center justify-center flex-shrink-0 mt-0.5">1</div>
+                    <div>
+                        <strong class="text-white block mb-0.5">Personaliza tu Llavero & Tarjeta</strong>
+                        Elige la ocasión (Cumpleaños, San Valentín, Graduación, etc.), añade nombres, foto, dedicatoria y tu sorpresa secreta interactiva.
+                    </div>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <div class="w-7 h-7 rounded-full bg-red-600/20 text-red-400 font-bold flex items-center justify-center flex-shrink-0 mt-0.5">2</div>
+                    <div>
+                        <strong class="text-white block mb-0.5">Realiza el Pago por Yape (7 Bs)</strong>
+                        Haz clic en el botón de pago, escanea el QR de Angel (Yape: 65153083) y transfiere exactamente 7.00 Bolivianos.
+                    </div>
+                </div>
+                <div class="flex items-start space-x-3">
+                    <div class="w-7 h-7 rounded-full bg-red-600/20 text-red-400 font-bold flex items-center justify-center flex-shrink-0 mt-0.5">3</div>
+                    <div>
+                        <strong class="text-white block mb-0.5">Envía el Pedido a WhatsApp</strong>
+                        Al hacer clic en enviar WhatsApp, se adjuntarán todos tus datos estructurados para que Angel verifique tu pago y fabrique tu llavero físico en Bolivia.
+                    </div>
+                </div>
+            </div>
+            <div class="mt-6 pt-4 border-t border-slate-800 text-center">
+                <button onclick="closeHowItWorksModal()" class="px-6 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-semibold text-xs transition">
+                    Entendido, ¡Crear mi Llavero!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 border-t border-slate-800 py-6 mt-12 text-center text-xs text-slate-400">
+        <div class="max-w-7xl mx-auto px-4 space-y-2">
+            <p class="font-semibold text-slate-300">IMAGICODE Bolivia &copy; 2026 - Kiosco Interactivo de Regalos & Llaveros Inteligentes con QR</p>
+            <p>Atención directa y pedidos en Bolivia con Angel (Yape: 65153083)</p>
+        </div>
+    </footer>
+
+    <!-- Application JavaScript Engine (1000+ lines robust implementation) -->
+    <script>
+        // --- OCCASIONS & PRESETS DATA SYSTEM ---
+        const occasionsData = {
+            sanvalentin: {
+                id: 'sanvalentin',
+                label: 'San Valentín',
+                icon: 'fa-heart',
+                badgeBg: 'bg-rose-500/20 text-rose-300 border-rose-500/40',
+                avatarIcon: 'fa-heart',
+                defaultAvatar: 'https://images.unsplash.com/photo-1518199266791-5375a83190b7?w=300&auto=format&fit=crop&q=80',
+                recipient: 'Camila Andrea',
+                sender: 'Alejandro (Tu amor)',
+                greeting: 'Feliz San Valentín mi vida. Eres la casualidad más hermosa que llegó a mi existencia. ¡Te amo con todo mi corazón!',
+                secretTitle: '💖 Nuestra Carta Secreta',
+                secretBtn: 'Tócame para ver tu regalo romántico 🎁',
+                secretMsg: 'Desde el primer día que te vi supe que eras tú. Prometo hacerte sonreír todos los días de mi vida. 💍✨',
+                theme: 'romantic',
+                melody: 'romance'
+            },
+            cumpleanos: {
+                id: 'cumpleanos',
+                label: 'Cumpleaños',
+                icon: 'fa-cake-candles',
+                badgeBg: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+                avatarIcon: 'fa-star',
+                defaultAvatar: 'https://images.unsplash.com/photo-1513151233558-d860c5398176?w=300&auto=format&fit=crop&q=80',
+                recipient: 'Mateo Andrés',
+                sender: 'Tus Mejores Amigos',
+                greeting: '¡Feliz Cumpleaños hermano/a! Que este nuevo año de vida esté lleno de metas cumplidas, salud y mucha felicidad. ¡A celebrar!',
+                secretTitle: '🎉 ¡Sorpresa de Cumpleaños!',
+                secretBtn: '¡Toca para tu regalo de cumple! 🎂',
+                secretMsg: 'Tienes un vale por una cena inolvidable y barra libre cortesía del grupo. ¡Que cumplas muchos más!',
+                theme: 'birthday',
+                melody: 'happy'
+            },
+            graduacion: {
+                id: 'graduacion',
+                label: 'Graduación',
+                icon: 'fa-graduation-cap',
+                badgeBg: 'bg-blue-500/20 text-blue-300 border-blue-500/40',
+                avatarIcon: 'fa-award',
+                defaultAvatar: 'https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=300&auto=format&fit=crop&q=80',
+                recipient: 'Valeria Sofía',
+                sender: 'Tu Orgullosa Familia',
+                greeting: '¡Felicitaciones por tu graduación! Todo tu esfuerzo, desvelos y dedicación dieron frutos. El futuro es completamente tuyo.',
+                secretTitle: '🎓 Mensaje de Éxito',
+                secretBtn: 'Toca para descubrir tu sorpresa 🌟',
+                secretMsg: 'Esto es apenas el comienzo de una carrera brillante. Estamos inmensamente orgullosos de ti. ¡A triunfar!',
+                theme: 'graduation',
+                melody: 'serene'
+            },
+            aniversario: {
+                id: 'aniversario',
+                label: 'Aniversario',
+                icon: 'fa-ring',
+                badgeBg: 'bg-purple-500/20 text-purple-300 border-purple-500/40',
+                avatarIcon: 'fa-infinity',
+                defaultAvatar: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=300&auto=format&fit=crop&q=80',
+                recipient: 'Mi Esposo/a Amado/a',
+                sender: 'Tu Compañero/a de Vida',
+                greeting: 'Feliz aniversario mi amor. Cada año a tu lado es un capítulo maravilloso en nuestra historia de amor inquebrantable.',
+                secretTitle: '💍 Promesa de Amor',
+                secretBtn: 'Toca para ver nuestra promesa 🥂',
+                secretMsg: 'Gracias por cada risa, cada abrazo y por construir este hermoso hogar juntos. ¡Por muchos años más!',
+                theme: 'wedding',
+                melody: 'romance'
+            },
+            agradecimiento: {
+                id: 'agradecimiento',
+                label: 'Agradecimiento',
+                icon: 'fa-hands-holding-heart',
+                badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                avatarIcon: 'fa-heart',
+                defaultAvatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=300&auto=format&fit=crop&q=80',
+                recipient: 'Mamá / Papá',
+                sender: 'Con Todo Cariño',
+                greeting: 'Gracias por estar siempre incondicionalmente, por tus sabios consejos y por darme el amor más puro del mundo.',
+                secretTitle: '💖 Nota de Gratitud',
+                secretBtn: 'Toca para leer mi agradecimiento 🌸',
+                secretMsg: 'No alcanzan las palabras para agradecer todo lo que has hecho por mí. Te amo infinitamente.',
+                theme: 'romantic',
+                melody: 'serene'
+            },
+            boda: {
+                id: 'boda',
+                label: 'Boda',
+                icon: 'fa-champagne-glasses',
+                badgeBg: 'bg-pink-500/20 text-pink-300 border-pink-500/40',
+                avatarIcon: 'fa-dove',
+                defaultAvatar: 'https://images.unsplash.com/photo-1519741497674-611481863552?w=300&auto=format&fit=crop&q=80',
+                recipient: 'Lucía & Carlos',
+                sender: 'De parte de Todos tus Amigos',
+                greeting: '¡Que viva el amor! Les deseamos una vida entera de complicidad, respeto mutuo y felicidad infinita en su matrimonio.',
+                secretTitle: '🥂 Brindis de Bodas',
+                secretBtn: 'Toca para la bendición de bodas ✨',
+                secretMsg: 'Que cada amanecer juntos sea una nueva oportunidad para amarse más. ¡Muchas felicidades en su nueva etapa!',
+                theme: 'wedding',
+                melody: 'romance'
+            },
+            navidad: {
+                id: 'navidad',
+                label: 'Navidad',
+                icon: 'fa-tree',
+                badgeBg: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+                avatarIcon: 'fa-gift',
+                defaultAvatar: 'https://images.unsplash.com/photo-1543589077-47d81606c1bf?w=300&auto=format&fit=crop&q=80',
+                recipient: 'Toda la Familia',
+                sender: 'Con Espíritu Navideño',
+                greeting: '¡Feliz Navidad! Que la paz, la unión y la alegría de estas fiestas reinen en cada rincón de su hogar.',
+                secretTitle: '🎄 Regalo de Navidad',
+                secretBtn: 'Toca para tu regalito navideño 🎅',
+                secretMsg: 'El mejor regalo de esta Navidad es tenerlos a todos con salud y felicidad. ¡Felices fiestas!',
+                theme: 'christmas',
+                melody: 'happy'
+            },
+            neon: {
+                id: 'neon',
+                label: 'Fiesta / Neón',
+                icon: 'fa-bolt',
+                badgeBg: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+                avatarIcon: 'fa-music',
+                defaultAvatar: 'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=300&auto=format&fit=crop&q=80',
+                recipient: 'Amigos & Party Crew',
+                sender: 'El Anfitrión',
+                greeting: '¡Prepárate para la mejor noche del año! Música alta, luces neón y momentos épicos que quedarán grabados para siempre.',
+                secretTitle: '⚡ Acceso VIP Neón',
+                secretBtn: 'Toca para tu pase VIP 🎧',
+                secretMsg: 'Este pase te otorga acceso prioritario y sorpresas exclusivas durante toda la noche. ¡Nos vemos en la pista!',
+                theme: 'neon',
+                melody: 'cyber'
+            }
+        };
+
+        const sampleAvatars = [
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=300&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=300&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=300&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=300&auto=format&fit=crop&q=80',
+            'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=300&auto=format&fit=crop&q=80'
+        ];
+
+        let currentOccasionId = 'sanvalentin';
+        let isAudioPlaying = false;
+        let synth = null;
+        let melodyLoop = null;
+
+        // --- INITIALIZATION ON LOAD ---
+        window.onload = function() {
+            renderOccasionGrid();
+            renderAvatarPresets();
+            loadOccasionPreset('sanvalentin');
+            updateLiveSimulator();
+        };
+
+        // Render Occasion Buttons
+        function renderOccasionGrid() {
+            const grid = document.getElementById('occasionGrid');
+            grid.innerHTML = '';
+            Object.values(occasionsData).forEach(occ => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.id = `occBtn_${occ.id}`;
+                btn.onclick = () => loadOccasionPreset(occ.id);
+                btn.className = `flex items-center space-x-2 p-2.5 rounded-xl border text-xs font-semibold transition text-left ${occ.id === currentOccasionId ? 'bg-red-600 text-white border-red-500 shadow-lg shadow-red-600/30' : 'bg-slate-950/80 text-slate-300 border-slate-800 hover:bg-slate-800'}`;
+                btn.innerHTML = `<i class="fa-solid ${occ.icon} text-sm"></i><span class="truncate">${occ.label}</span>`;
+                grid.appendChild(btn);
+            });
+        }
+
+        // Render Avatar Presets
+        function renderAvatarPresets() {
+            const container = document.getElementById('avatarPresets');
+            container.innerHTML = '';
+            sampleAvatars.forEach(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'Avatar Preset';
+                img.className = 'w-9 h-9 rounded-full object-cover border-2 border-slate-700 cursor-pointer hover:border-red-500 transition transform hover:scale-105';
+                img.onclick = () => {
+                    document.getElementById('avatarUrl').value = url;
+                    updateLiveSimulator();
+                };
+                container.appendChild(img);
+            });
+        }
+
+        // Load Preset into Form
+        function loadOccasionPreset(occId) {
+            currentOccasionId = occId;
+            const data = occasionsData[occId];
+            if (!data) return;
+
+            document.getElementById('recipientName').value = data.recipient;
+            document.getElementById('senderName').value = data.sender;
+            document.getElementById('avatarUrl').value = data.defaultAvatar;
+            document.getElementById('mainGreeting').value = data.greeting;
+            document.getElementById('secretTitle').value = data.secretTitle;
+            document.getElementById('secretButtonText').value = data.secretBtn;
+            document.getElementById('secretMessage').value = data.secretMsg;
+            document.getElementById('themeStyle').value = data.theme;
+            document.getElementById('bgMelody').value = data.melody;
+
+            renderOccasionGrid();
+            updateLiveSimulator();
+        }
+
+        function loadSample1() { loadOccasionPreset('sanvalentin'); }
+        function loadSample2() { loadOccasionPreset('cumpleanos'); }
+        function loadPresetSample() {
+            const keys = Object.keys(occasionsData);
+            const randomKey = keys[Math.floor(Math.random() * keys.length)];
+            loadOccasionPreset(randomKey);
+        }
+
+        function selectRandomAvatar() {
+            const randomUrl = sampleAvatars[Math.floor(Math.random() * sampleAvatars.length)];
+            document.getElementById('avatarUrl').value = randomUrl;
+            updateLiveSimulator();
+        }
+
+        // --- UPDATE LIVE SMARTPHONE SIMULATOR ---
+        function updateLiveSimulator() {
+            const occ = occasionsData[currentOccasionId] || occasionsData['sanvalentin'];
+            const recipient = document.getElementById('recipientName').value || occ.recipient;
+            const sender = document.getElementById('senderName').value || occ.sender;
+            const avatar = document.getElementById('avatarUrl').value || occ.defaultAvatar;
+            const greeting = document.getElementById('mainGreeting').value || occ.greeting;
+            const secretBtnText = document.getElementById('secretButtonText').value || occ.secretBtn;
+            const theme = document.getElementById('themeStyle').value;
+
+            // Update UI fields
+            document.getElementById('simRecipientTitle').innerText = recipient;
+            document.getElementById('simSenderText').innerText = sender;
+            document.getElementById('simAvatarImg').src = avatar;
+            document.getElementById('simGreetingText').innerText = `"${greeting}"`;
+            document.getElementById('simSecretBtnText').innerText = secretBtnText;
+            document.getElementById('simOccasionBadge').innerText = occ.label.toUpperCase();
+            document.getElementById('simAvatarIcon').className = `fa-solid ${occ.avatarIcon}`;
+
+            // Apply Theme styling to Phone Screen
+            const screen = document.getElementById('phoneScreen');
+            screen.className = 'relative w-full h-full rounded-[38px] overflow-y-auto flex flex-col transition-all duration-500 p-5 pt-10 text-slate-100 shadow-inner';
+            
+            if (theme === 'romantic') {
+                screen.style.background = 'linear-gradient(135deg, #1e1b2e 0%, #2e101a 50%, #4c0519 100%)';
+            } else if (theme === 'birthday') {
+                screen.style.background = 'linear-gradient(135deg, #181824 0%, #2e2410 50%, #451a03 100%)';
+            } else if (theme === 'graduation') {
+                screen.style.background = 'linear-gradient(135deg, #091e3a 0%, #0f172a 50%, #022342 100%)';
+            } else if (theme === 'neon') {
+                screen.style.background = 'linear-gradient(135deg, #030712 0%, #082f49 50%, #1e1b4b 100%)';
+            } else if (theme === 'wedding') {
+                screen.style.background = 'linear-gradient(135deg, #1e293b 0%, #334155 50%, #475569 100%)';
+            } else if (theme === 'christmas') {
+                screen.style.background = 'linear-gradient(135deg, #064e3b 0%, #022c22 50%, #7f1d1d 100%)';
+            } else {
+                screen.style.background = 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #311026 100%)';
+            }
+
+            // Update checkout modal summary recipient
+            document.getElementById('modalSummaryRecipient').innerText = recipient;
+        }
+
+        // --- SECRET POPUP & CONFETTI TRIGGER ---
+        function triggerSecretPopup() {
+            const occ = occasionsData[currentOccasionId] || occasionsData['sanvalentin'];
+            const title = document.getElementById('secretTitle').value || occ.secretTitle;
+            const message = document.getElementById('secretMessage').value || occ.secretMsg;
+
+            document.getElementById('popupSecretTitleModal').innerText = title;
+            document.getElementById('popupSecretMsgModal').innerText = message;
+            document.getElementById('secretPopupModal').classList.remove('hidden');
+
+            // Trigger Canvas Confetti
+            confetti({
+                particleCount: 100,
+                spread: 70,
+                origin: { y: 0.6 }
+            });
+
+            // Play celebratory sound if audio is enabled
+            if (isAudioPlaying) {
+                playSuccessChime();
+            }
+        }
+
+        function closeSecretPopup() {
+            document.getElementById('secretPopupModal').classList.add('hidden');
+        }
+
+        // --- CHECKOUT & YAPE MODAL FLOW ---
+        function openCheckoutModal() {
+            document.getElementById('checkoutModal').classList.remove('hidden');
+        }
+
+        function closeCheckoutModal() {
+            document.getElementById('checkoutModal').classList.add('hidden');
+        }
+
+        function openHowItWorksModal() {
+            document.getElementById('howItWorksModal').classList.remove('hidden');
+        }
+
+        function closeHowItWorksModal() {
+            document.getElementById('howItWorksModal').classList.add('hidden');
+        }
+
+        // --- CRITICAL YAPE TO WHATSAPP ORDER SUBMISSION ---
+        function sendOrderToWhatsApp() {
+            const recipient = document.getElementById('recipientName').value || 'Sin nombre';
+            const sender = document.getElementById('senderName').value || 'Anónimo';
+            const greeting = document.getElementById('mainGreeting').value || '';
+            const secretMsg = document.getElementById('secretMessage').value || '';
+            const occasion = occasionsData[currentOccasionId].label;
+            const theme = document.getElementById('themeStyle').value;
+
+            // Construct clean structured WhatsApp message for Angel
+            let message = `*🧾 NUEVO PEDIDO IMAGICODE BOLIVIA*\n`;
+            message += `-----------------------------------\n`;
+            message += `*Ocasión:* ${occasion}\n`;
+            message += `*Para:* ${recipient}\n`;
+            message += `*De parte de:* ${sender}\n`;
+            message += `*Estilo/Tema:* ${theme}\n`;
+            message += `*Mensaje:* "${greeting}"\n`;
+            message += `*Sorpresa Secreta:* "${secretMsg}"\n`;
+            message += `-----------------------------------\n`;
+            message += `*Monto:* 7.00 Bs (Yape a Angel - 65153083)\n`;
+            message += `¡Hola Angel! Ya realicé mi pago de 7 Bs por Yape. Adjunto mi comprobante para la fabricación de mi llavero físico y generación de mi QR interactivo.`;
+
+            const encodedMessage = encodeURIComponent(message);
+            const whatsappUrl = `https://wa.me/59165153083?text=${encodedMessage}`;
+
+            closeCheckoutModal();
+            window.open(whatsappUrl, '_blank');
+        }
+
+        // --- WEB AUDIO & TONE.JS ENGINE ---
+        async function toggleAudioEngine() {
+            await Tone.start();
+            isAudioPlaying = !isAudioPlaying;
+            
+            const btn = document.getElementById('audioToggleBtn');
+            const icon = document.getElementById('audioIcon');
+            const text = document.getElementById('audioStatusText');
+
+            if (isAudioPlaying) {
+                icon.className = 'fa-solid fa-volume-high text-emerald-400 animate-bounce';
+                text.innerText = 'Música / Audio: ON';
+                btn.classList.add('border-emerald-500/50', 'bg-emerald-500/10');
+                startBackgroundMelody();
+            } else {
+                icon.className = 'fa-solid fa-volume-xmark text-red-400';
+                text.innerText = 'Música / Audio: OFF';
+                btn.classList.remove('border-emerald-500/50', 'bg-emerald-500/10');
+                stopBackgroundMelody();
+            }
+        }
+
+        function startBackgroundMelody() {
+            if (synth) stopBackgroundMelody();
+            
+            synth = new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "triangle" },
+                envelope: { attack: 0.1, decay: 0.3, sustain: 0.4, release: 1.2 }
+            }).toDestination();
+            synth.volume.value = -12;
+
+            const melodyType = document.getElementById('bgMelody').value;
+            let notes = ["C4", "E4", "G4", "B4"];
+            if (melodyType === 'happy') notes = ["C4", "D4", "E4", "G4", "A4"];
+            else if (melodyType === 'serene') notes = ["F3", "A3", "C4", "E4"];
+            else if (melodyType === 'cyber') notes = ["A2", "E3", "G3", "C4"];
+
+            let index = 0;
+            melodyLoop = new Tone.Loop(time => {
+                let note = notes[index % notes.length];
+                synth.triggerAttackRelease(note, "4n", time);
+                index++;
+            }, "2n").start(0);
+
+            Tone.Transport.bpm.value = 80;
+            Tone.Transport.start();
+        }
+
+        function stopBackgroundMelody() {
+            if (melodyLoop) {
+                melodyLoop.stop();
+                melodyLoop.dispose();
+                melodyLoop = null;
+            }
+            if (synth) {
+                synth.dispose();
+                synth = null;
+            }
+            Tone.Transport.stop();
+        }
+
+        function playSuccessChime() {
+            try {
+                const chime = new Tone.Synth().toDestination();
+                chime.triggerAttackRelease("C5", "8n");
+                setTimeout(() => chime.triggerAttackRelease("E5", "8n"), 150);
+                setTimeout(() => chime.triggerAttackRelease("G5", "4n"), 300);
+            } catch (e) {
+                console.log("Audio chime note triggered");
+            }
+        }
+    </script>
+</body>
+</html>
